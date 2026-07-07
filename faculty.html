@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Faculty Dashboard - Attendance System</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{ margin:0; padding:0; box-sizing:border-box; font-family:'Poppins',sans-serif; }
+body{
+    min-height:100vh;
+    padding:20px;
+    background-image:linear-gradient(135deg, rgba(79,70,229,0.85), rgba(6,182,212,0.85)), url('background.jpg');
+    background-size:cover;
+    background-position:center;
+    background-attachment:fixed;
+}
+.topbar{
+    max-width:1200px; margin:0 auto 15px; display:flex; justify-content:space-between;
+    align-items:center; color:white; flex-wrap:wrap; gap:10px;
+}
+.topbar h1{ font-size:24px; }
+.topbar .subjects-line{ font-size:13px; opacity:0.9; margin-top:4px; }
+.logout-btn{
+    padding:8px 18px; border:none; border-radius:10px; background:rgba(255,255,255,0.9);
+    color:#4f46e5; font-weight:600; cursor:pointer;
+}
+.tabs{ max-width:1200px; margin:0 auto 20px; display:flex; gap:10px; flex-wrap:wrap; }
+.tabs button{
+    padding:10px 20px; border:none; border-radius:30px; background:rgba(255,255,255,0.25);
+    color:white; font-weight:600; cursor:pointer; transition:0.25s;
+}
+.tabs button.active{ background:white; color:#4f46e5; }
+
+.box{
+    max-width:1200px; margin:0 auto 20px; padding:25px; border-radius:20px;
+    background:rgba(255,255,255,0.92); box-shadow:0 10px 25px rgba(0,0,0,0.2);
+}
+.section{ display:none; }
+.section.active{ display:block; }
+
+h2{ color:#4f46e5; margin-bottom:18px; }
+.form-row{ display:flex; gap:15px; flex-wrap:wrap; margin-bottom:15px; }
+.form-row .input-group{ flex:1; min-width:180px; }
+label{ display:block; font-size:13px; font-weight:600; color:#333; margin-bottom:5px; }
+input, select{ width:100%; padding:10px; border:1px solid #ccc; border-radius:8px; outline:none; }
+input:focus, select:focus{ border-color:#4f46e5; }
+
+.btn{
+    padding:10px 20px; border:none; border-radius:8px; background:#4f46e5; color:white;
+    font-weight:600; cursor:pointer; transition:0.2s;
+}
+.btn:hover{ background:#3d38c9; }
+.btn.danger{ background:#e11d48; }
+.btn.danger:hover{ background:#be123c; }
+.btn.secondary{ background:#64748b; }
+.btn.secondary:hover{ background:#475569; }
+
+table{ width:100%; border-collapse:collapse; margin-top:15px; font-size:14px; }
+th, td{ padding:10px; border-bottom:1px solid #eee; text-align:left; }
+th{ background:#4f46e5; color:white; }
+tr:hover{ background:#f7f7ff; }
+
+.badge{ padding:4px 10px; border-radius:20px; font-size:12px; font-weight:600; }
+.badge.present{ background:#dcfce7; color:#16a34a; }
+.badge.absent{ background:#fee2e2; color:#dc2626; }
+.badge.none{ background:#f1f5f9; color:#64748b; }
+.subject-chip{
+    display:inline-flex; align-items:center; gap:6px; background:#eef2ff; color:#4f46e5;
+    padding:5px 12px; border-radius:20px; font-size:13px; margin:3px 4px 3px 0; font-weight:600;
+}
+.subject-chip button{ background:none; border:none; color:#e11d48; cursor:pointer; font-weight:700; }
+
+.msg{ font-size:13px; margin-top:8px; min-height:16px; }
+.msg.error{ color:#e11d48; }
+.msg.success{ color:#16a34a; }
+
+.att-row{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding:12px; border:1px solid #eee; border-radius:10px; margin-bottom:10px; flex-wrap:wrap;
+}
+.att-row .name{ font-weight:600; }
+.att-row .actions{ display:flex; gap:8px; flex-wrap:wrap; }
+.btn.small{ padding:7px 12px; font-size:13px; }
+
+.modal-bg{
+    display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5);
+    align-items:center; justify-content:center; z-index:50;
+}
+.modal-bg.active{ display:flex; }
+.modal{ background:white; border-radius:16px; padding:25px; width:420px; max-width:92%; text-align:center; }
+video{ width:100%; border-radius:12px; background:#000; margin:12px 0; }
+.close-modal{ margin-top:10px; }
+
+.filters{ display:flex; gap:12px; flex-wrap:wrap; margin-bottom:15px; align-items:end; }
+.notice{
+    background:#fff7ed; border:1px solid #fed7aa; color:#9a3412; padding:12px 16px;
+    border-radius:10px; font-size:13.5px; margin-bottom:15px;
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+    <div>
+        <h1 id="welcomeMsg">👨‍🏫 Faculty Dashboard</h1>
+        <div class="subjects-line" id="subjectsLine"></div>
+    </div>
+    <button class="logout-btn" onclick="logout()">Logout</button>
+</div>
+
+<div class="tabs">
+    <button data-sec="manageSec" class="active">Manage Students</button>
+    <button data-sec="subjectSec">My Subjects</button>
+    <button data-sec="attendSec">Take Attendance</button>
+    <button data-sec="recordsSec">Attendance Records</button>
+</div>
+
+<!-- MANAGE STUDENTS -->
+<div class="box section active" id="manageSec">
+    <h2>Add Student</h2>
+    <form id="addStudentForm">
+        <div class="form-row">
+            <div class="input-group">
+                <label>Full Name</label>
+                <input type="text" id="ns_name" required>
+            </div>
+            <div class="input-group">
+                <label>Enrollment Number</label>
+                <input type="text" id="ns_enroll" required>
+            </div>
+            <div class="input-group">
+                <label>Class / Section</label>
+                <input type="text" id="ns_class" placeholder="e.g. BCA-3A" required>
+            </div>
+            <div class="input-group">
+                <label>Password (for student login)</label>
+                <input type="text" id="ns_pass" required>
+            </div>
+        </div>
+        <button class="btn" type="submit">➕ Add Student</button>
+        <p id="addStudentMsg" class="msg"></p>
+    </form>
+
+    <h2 style="margin-top:30px;">Student List</h2>
+    <table id="studentsTable">
+        <thead>
+            <tr><th>Name</th><th>Enrollment</th><th>Class</th><th>Face Enrolled</th><th>Biometric Enrolled</th><th>Actions</th></tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>
+
+<!-- MY SUBJECTS -->
+<div class="box section" id="subjectSec">
+    <h2>My Subjects</h2>
+    <p style="font-size:13.5px;color:#555;margin-bottom:12px;">
+        If you teach more than one subject, add each one here. When you take attendance, you'll pick which subject the session is for — attendance and attendance % are tracked separately per subject.
+    </p>
+    <div id="subjectChips" style="margin-bottom:15px;"></div>
+    <form id="addSubjectForm" style="display:flex; gap:10px; max-width:400px;">
+        <input type="text" id="newSubject" placeholder="e.g. Physics" required>
+        <button class="btn" type="submit">➕ Add Subject</button>
+    </form>
+</div>
+
+<!-- TAKE ATTENDANCE -->
+<div class="box section" id="attendSec">
+    <h2>Take Today's Attendance</h2>
+    <div id="noSubjectNotice" class="notice" style="display:none;">
+        You haven't added any subject yet. Go to "My Subjects" tab and add at least one subject before taking attendance.
+    </div>
+    <div class="filters">
+        <div class="input-group">
+            <label>Subject</label>
+            <select id="attSubjectFilter"></select>
+        </div>
+        <div class="input-group">
+            <label>Class</label>
+            <select id="attClassFilter"></select>
+        </div>
+    </div>
+    <div id="attendanceList"></div>
+</div>
+
+<!-- RECORDS -->
+<div class="box section" id="recordsSec">
+    <h2>Attendance Records</h2>
+    <div class="filters">
+        <div class="input-group">
+            <label>Subject</label>
+            <select id="recSubjectFilter"><option value="">All My Subjects</option></select>
+        </div>
+        <div class="input-group">
+            <label>Class</label>
+            <select id="recClassFilter"><option value="">All</option></select>
+        </div>
+        <div class="input-group">
+            <label>Date</label>
+            <input type="date" id="recDateFilter">
+        </div>
+        <div><button class="btn secondary" onclick="loadRecords()">Filter</button></div>
+        <div><button class="btn" onclick="exportRecords()">⬇ Export CSV</button></div>
+        <div><a href="report.html" class="btn secondary" style="text-decoration:none; display:inline-block;">📊 Full Report</a></div>
+    </div>
+    <table id="recordsTable">
+        <thead><tr><th>Date</th><th>Enrollment</th><th>Name</th><th>Class</th><th>Subject</th><th>Status</th><th>Method</th><th>Time</th></tr></thead>
+        <tbody></tbody>
+    </table>
+</div>
+
+<!-- Face Capture Modal -->
+<div class="modal-bg" id="faceModal">
+    <div class="modal">
+        <h3 id="faceModalTitle">Face Capture</h3>
+        <video id="faceVideo" autoplay muted playsinline></video>
+        <p id="faceModalMsg" class="msg"></p>
+        <button class="btn" id="faceCaptureBtn">📸 Capture</button>
+        <button class="btn secondary close-modal" onclick="closeFaceModal()">Cancel</button>
+    </div>
+</div>
+
+<script src="db.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+<script src="biometric.js"></script>
+<script>
+
+// ---- Auth guard ----
+const session = DB.getSession();
+if (!session || session.role !== "faculty") {
+    window.location.href = "login.html";
+}
+let faculty = DB.findFacultyById(session.id);
+if(!faculty){ DB.clearSession(); window.location.href = "login.html"; }
+
+function refreshFacultyHeader(){
+    faculty = DB.findFacultyById(session.id);
+    document.getElementById("welcomeMsg").textContent = `👨‍🏫 Welcome, ${faculty.name}`;
+    document.getElementById("subjectsLine").textContent = faculty.subjects.length
+        ? `Teaching: ${faculty.subjects.join(", ")}`
+        : "No subjects added yet";
+}
+refreshFacultyHeader();
+
+function logout(){ DB.clearSession(); window.location.href = "login.html"; }
+
+// ---- Tabs ----
+document.querySelectorAll(".tabs button").forEach(btn => {
+    btn.addEventListener("click", () => {
+        document.querySelectorAll(".tabs button").forEach(b => b.classList.remove("active"));
+        document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
+        btn.classList.add("active");
+        document.getElementById(btn.dataset.sec).classList.add("active");
+        if (btn.dataset.sec === "subjectSec") renderSubjectChips();
+        if (btn.dataset.sec === "attendSec") { populateAttSubjectFilter(); renderAttendanceList(); }
+        if (btn.dataset.sec === "recordsSec") { populateRecSubjectFilter(); loadRecords(); }
+    });
+});
+
+// ---- My Subjects ----
+function renderSubjectChips(){
+    const box = document.getElementById("subjectChips");
+    box.innerHTML = "";
+    faculty = DB.findFacultyById(session.id);
+    if(faculty.subjects.length === 0){
+        box.innerHTML = "<p style='color:#888;'>No subjects added yet.</p>";
+        return;
+    }
+    faculty.subjects.forEach(sub => {
+        const chip = document.createElement("span");
+        chip.className = "subject-chip";
+        chip.innerHTML = `${sub} <button onclick="removeSubject('${sub}')">✕</button>`;
+        box.appendChild(chip);
+    });
+}
+function removeSubject(sub){
+    if(!confirm(`Remove "${sub}" from your subjects?`)) return;
+    DB.removeSubjectFromFaculty(session.id, sub);
+    renderSubjectChips();
+    refreshFacultyHeader();
+}
+document.getElementById("addSubjectForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    const input = document.getElementById("newSubject");
+    const sub = input.value.trim();
+    if(!sub) return;
+    DB.addSubjectToFaculty(session.id, sub);
+    input.value = "";
+    renderSubjectChips();
+    refreshFacultyHeader();
+});
+
+// ---- Manage Students ----
+function renderStudentsTable(){
+    const tbody = document.querySelector("#studentsTable tbody");
+    tbody.innerHTML = "";
+    DB.getStudents().forEach(s => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td>${s.name}</td>
+            <td>${s.enrollment}</td>
+            <td>${s.className}</td>
+            <td>${s.faceDescriptor ? "✅" : "—"}</td>
+            <td>${s.biometricCredId ? "✅" : "—"}</td>
+            <td><button class="btn small danger" onclick="removeStudent('${s.enrollment}')">Delete</button></td>`;
+        tbody.appendChild(tr);
+    });
+    populateClassFilters();
+}
+function removeStudent(enrollment){
+    if(!confirm(`Delete student ${enrollment}? This also removes their attendance history.`)) return;
+    DB.deleteStudent(enrollment);
+    renderStudentsTable();
+}
+document.getElementById("addStudentForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    const name = document.getElementById("ns_name").value.trim();
+    const enrollment = document.getElementById("ns_enroll").value.trim();
+    const className = document.getElementById("ns_class").value.trim();
+    const password = document.getElementById("ns_pass").value.trim();
+    const msg = document.getElementById("addStudentMsg");
+
+    if(DB.enrollmentExists(enrollment)){
+        msg.textContent = "A student with this enrollment number already exists.";
+        msg.className = "msg error";
+        return;
+    }
+    DB.addStudent({ enrollment, name, className, password, faceDescriptor: null, biometricCredId: null });
+    msg.textContent = `Student ${name} added successfully.`;
+    msg.className = "msg success";
+    this.reset();
+    renderStudentsTable();
+});
+
+function populateClassFilters(){
+    const classes = DB.getClasses();
+    const attSel = document.getElementById("attClassFilter");
+    const recSel = document.getElementById("recClassFilter");
+    const prevAtt = attSel.value, prevRec = recSel.value;
+    attSel.innerHTML = classes.map(c => `<option value="${c}">${c}</option>`).join("");
+    recSel.innerHTML = `<option value="">All</option>` + classes.map(c => `<option value="${c}">${c}</option>`).join("");
+    if(classes.includes(prevAtt)) attSel.value = prevAtt;
+    if(classes.includes(prevRec)) recSel.value = prevRec;
+}
+
+// ---- Take Attendance (subject-aware) ----
+function populateAttSubjectFilter(){
+    faculty = DB.findFacultyById(session.id);
+    const sel = document.getElementById("attSubjectFilter");
+    const notice = document.getElementById("noSubjectNotice");
+    if(faculty.subjects.length === 0){
+        sel.innerHTML = "";
+        notice.style.display = "block";
+        document.getElementById("attendanceList").innerHTML = "";
+        return;
+    }
+    notice.style.display = "none";
+    const prev = sel.value;
+    sel.innerHTML = faculty.subjects.map(s => `<option value="${s}">${s}</option>`).join("");
+    if(faculty.subjects.includes(prev)) sel.value = prev;
+}
+document.getElementById("attSubjectFilter").addEventListener("change", renderAttendanceList);
+document.getElementById("attClassFilter").addEventListener("change", renderAttendanceList);
+
+function renderAttendanceList(){
+    const subject = document.getElementById("attSubjectFilter").value;
+    const cls = document.getElementById("attClassFilter").value;
+    const list = document.getElementById("attendanceList");
+    if(!subject){ list.innerHTML = ""; return; }
+    const students = DB.getStudents().filter(s => !cls || s.className === cls);
+    if(students.length === 0){
+        list.innerHTML = "<p>No students in this class yet. Add students first.</p>";
+        return;
+    }
+    list.innerHTML = "";
+    students.forEach(s => {
+        const today = DB.getTodayStatus(s.enrollment, subject);
+        const badgeClass = today ? today.status : "none";
+        const badgeText = today ? `${today.status.toUpperCase()} (${today.method})` : "Not marked";
+        const row = document.createElement("div");
+        row.className = "att-row";
+        row.innerHTML = `
+            <div>
+                <div class="name">${s.name} <span style="color:#888;font-weight:400;">(${s.enrollment})</span></div>
+                <span class="badge ${badgeClass}">${subject}: ${badgeText}</span>
+            </div>
+            <div class="actions">
+                <button class="btn small" onclick="startFaceAttendance('${s.enrollment}','${subject}')">📷 Face</button>
+                <button class="btn small secondary" onclick="startBiometricAttendance('${s.enrollment}','${subject}')">🔒 Fingerprint/Face Unlock</button>
+                <button class="btn small" style="background:#16a34a;" onclick="manualMark('${s.enrollment}','present','${subject}')">Present</button>
+                <button class="btn small danger" onclick="manualMark('${s.enrollment}','absent','${subject}')">Absent</button>
+            </div>`;
+        list.appendChild(row);
+    });
+}
+function manualMark(enrollment, status, subject){
+    DB.markAttendance(enrollment, status, "manual", subject, session.id);
+    renderAttendanceList();
+}
+
+// ---- Face enrollment + attendance (shared modal) ----
+let faceStream = null;
+let faceMode = null;
+let faceTargetEnrollment = null;
+let faceTargetSubject = null;
+
+async function openFaceModal(title){
+    document.getElementById("faceModalTitle").textContent = title;
+    document.getElementById("faceModalMsg").textContent = "Loading face models...";
+    document.getElementById("faceModal").classList.add("active");
+    try{
+        await Biometric.loadFaceModels();
+        faceStream = await Biometric.startCamera(document.getElementById("faceVideo"));
+        document.getElementById("faceModalMsg").textContent = "Position the face in frame and click Capture.";
+    } catch(err){
+        document.getElementById("faceModalMsg").textContent = "Camera/model error: " + err.message;
+    }
+}
+function closeFaceModal(){
+    Biometric.stopCamera(faceStream);
+    faceStream = null;
+    document.getElementById("faceModal").classList.remove("active");
+}
+
+async function startFaceAttendance(enrollment, subject){
+    const student = DB.findStudent(enrollment);
+    faceTargetSubject = subject;
+    if(!student.faceDescriptor){
+        if(!confirm(`${student.name} has no face enrolled yet. Enroll their face now?`)) return;
+        faceMode = "enroll";
+        faceTargetEnrollment = enrollment;
+        await openFaceModal(`Enroll Face - ${student.name}`);
+        return;
+    }
+    faceMode = "attendance";
+    faceTargetEnrollment = enrollment;
+    await openFaceModal(`Face Attendance - ${student.name} (${subject})`);
+}
+
+document.getElementById("faceCaptureBtn").addEventListener("click", async () => {
+    const msg = document.getElementById("faceModalMsg");
+    msg.textContent = "Analyzing...";
+    try{
+        const descriptor = await Biometric.getFaceDescriptor(document.getElementById("faceVideo"));
+        if(!descriptor){
+            msg.textContent = "No face detected. Try again with better lighting.";
+            return;
+        }
+        const student = DB.findStudent(faceTargetEnrollment);
+        if(faceMode === "enroll"){
+            DB.updateStudent(faceTargetEnrollment, { faceDescriptor: descriptor });
+            msg.textContent = "Face enrolled successfully!";
+            setTimeout(() => { closeFaceModal(); renderAttendanceList(); renderStudentsTable(); }, 1000);
+        } else {
+            const distance = Biometric.compareFaces(descriptor, student.faceDescriptor);
+            if(distance < 0.55){
+                DB.markAttendance(faceTargetEnrollment, "present", "face", faceTargetSubject, session.id);
+                msg.textContent = `Match found (score ${distance.toFixed(2)}). Marked PRESENT for ${faceTargetSubject}.`;
+                setTimeout(() => { closeFaceModal(); renderAttendanceList(); }, 1200);
+            } else {
+                msg.textContent = `Face did not match closely enough (score ${distance.toFixed(2)}). Try again.`;
+            }
+        }
+    } catch(err){
+        msg.textContent = "Error: " + err.message;
+    }
+});
+
+// ---- Biometric (device) enrollment + attendance ----
+async function startBiometricAttendance(enrollment, subject){
+    if(!Biometric.isWebAuthnSupported()){
+        alert("This device/browser doesn't support platform biometrics (fingerprint/face unlock).");
+        return;
+    }
+    const student = DB.findStudent(enrollment);
+    try{
+        if(!student.biometricCredId){
+            if(!confirm(`${student.name} has no device biometric enrolled. Enroll now using this device's fingerprint/face unlock?`)) return;
+            const credId = await Biometric.registerBiometric(enrollment, student.name);
+            DB.updateStudent(enrollment, { biometricCredId: credId });
+            alert("Biometric enrolled on this device. Ask the student to verify to mark attendance now.");
+            renderStudentsTable();
+        }
+        const verified = await Biometric.verifyBiometric(DB.findStudent(enrollment).biometricCredId);
+        if(verified){
+            DB.markAttendance(enrollment, "present", "biometric", subject, session.id);
+            alert(`${student.name} verified via device biometric. Marked PRESENT for ${subject}.`);
+            renderAttendanceList();
+        }
+    } catch(err){
+        alert("Biometric error/cancelled: " + err.message);
+    }
+}
+
+// ---- Records ----
+function populateRecSubjectFilter(){
+    faculty = DB.findFacultyById(session.id);
+    const sel = document.getElementById("recSubjectFilter");
+    const prev = sel.value;
+    sel.innerHTML = `<option value="">All My Subjects</option>` + faculty.subjects.map(s => `<option value="${s}">${s}</option>`).join("");
+    if(faculty.subjects.includes(prev)) sel.value = prev;
+}
+
+function loadRecords(){
+    const subject = document.getElementById("recSubjectFilter").value;
+    const cls = document.getElementById("recClassFilter").value;
+    const date = document.getElementById("recDateFilter").value;
+    const mySubjects = DB.findFacultyById(session.id).subjects;
+
+    let records = DB.getAttendance().filter(r => mySubjects.includes(r.subject));
+    if(subject) records = records.filter(r => r.subject === subject);
+    if(date) records = records.filter(r => r.date === date);
+
+    const students = DB.getStudents();
+    const tbody = document.querySelector("#recordsTable tbody");
+    tbody.innerHTML = "";
+    records
+      .map(r => ({ ...r, student: students.find(s => s.enrollment === r.enrollment) }))
+      .filter(r => r.student && (!cls || r.student.className === cls))
+      .sort((a,b) => b.date.localeCompare(a.date))
+      .forEach(r => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td>${r.date}</td><td>${r.enrollment}</td><td>${r.student.name}</td>
+            <td>${r.student.className}</td><td>${r.subject}</td>
+            <td><span class="badge ${r.status}">${r.status.toUpperCase()}</span></td>
+            <td>${r.method}</td><td>${r.time}</td>`;
+        tbody.appendChild(tr);
+      });
+}
+
+function exportRecords(){
+    const students = DB.getStudents();
+    const mySubjects = DB.findFacultyById(session.id).subjects;
+    const rows = [["Date","Enrollment","Name","Class","Subject","Status","Method","Time"]];
+    DB.getAttendance().filter(r => mySubjects.includes(r.subject)).forEach(r => {
+        const s = students.find(x => x.enrollment === r.enrollment);
+        rows.push([r.date, r.enrollment, s ? s.name : "", s ? s.className : "", r.subject, r.status, r.method, r.time]);
+    });
+    DB.csvExport(rows, "attendance_records.csv");
+}
+
+// ---- Init ----
+renderStudentsTable();
+</script>
+</body>
+</html>

@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Attendance Report</title>
+<style>
+*{ box-sizing:border-box; }
+body{
+    margin:0; padding:20px; font-family:Arial,sans-serif;
+    background:linear-gradient(135deg,#4f46e5,#06b6d4);
+    min-height:100vh;
+}
+.container{
+    max-width:1400px; margin:auto; background:white; padding:25px;
+    border-radius:20px; box-shadow:0 10px 25px rgba(0,0,0,0.2); overflow-x:auto;
+}
+h1{ text-align:center; color:#4f46e5; }
+.topline{ display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+.topline a{ text-decoration:none; color:#4f46e5; font-weight:600; }
+
+.filters{ display:flex; gap:15px; flex-wrap:wrap; margin:20px 0; align-items:end; }
+.filters .group{ display:flex; flex-direction:column; gap:4px; }
+.filters label{ font-size:13px; font-weight:600; color:#333; }
+.filters select, .filters input{ padding:9px; border:1px solid #ccc; border-radius:8px; min-width:160px; }
+.btn{ padding:10px 18px; border:none; border-radius:8px; background:#4f46e5; color:white; font-weight:600; cursor:pointer; }
+.btn:hover{ background:#3d38c9; }
+.btn.secondary{ background:#64748b; }
+
+.summary-cards{ display:flex; gap:15px; flex-wrap:wrap; margin-bottom:20px; }
+.card{ flex:1; min-width:150px; padding:18px; border-radius:14px; color:white; text-align:center; }
+.card .num{ font-size:26px; font-weight:700; }
+.card .lbl{ font-size:12px; opacity:0.9; }
+
+table{ width:100%; border-collapse:collapse; margin-top:20px; }
+th{ background:#4f46e5; color:white; padding:12px; text-align:left; }
+td{ padding:10px 12px; border-bottom:1px solid #eee; }
+tr:hover{ background:#f7f7ff; }
+
+.bar-bg{ background:#eee; border-radius:6px; overflow:hidden; height:14px; width:150px; }
+.bar-fill{ height:100%; }
+</style>
+</head>
+<body>
+<div class="container">
+    <div class="topline">
+        <a href="faculty.html">← Back to Dashboard</a>
+        <a href="report.html">🔄 Refresh</a>
+    </div>
+    <h1>📊 Attendance Report</h1>
+
+    <div class="filters">
+        <div class="group">
+            <label>Subject</label>
+            <select id="subjectFilter"><option value="">All Subjects</option></select>
+        </div>
+        <div class="group">
+            <label>Class</label>
+            <select id="classFilter"><option value="">All Classes</option></select>
+        </div>
+        <div class="group">
+            <label>From Date</label>
+            <input type="date" id="fromDate">
+        </div>
+        <div class="group">
+            <label>To Date</label>
+            <input type="date" id="toDate">
+        </div>
+        <div><button class="btn" onclick="renderReport()">Apply Filters</button></div>
+        <div><button class="btn secondary" onclick="exportSummary()">⬇ Export Summary CSV</button></div>
+    </div>
+
+    <div class="summary-cards">
+        <div class="card" style="background:#4f46e5;"><div class="num" id="c_students">0</div><div class="lbl">Total Students</div></div>
+        <div class="card" style="background:#16a34a;"><div class="num" id="c_present">0</div><div class="lbl">Present Marks</div></div>
+        <div class="card" style="background:#dc2626;"><div class="num" id="c_absent">0</div><div class="lbl">Absent Marks</div></div>
+        <div class="card" style="background:#06b6d4;"><div class="num" id="c_avg">0%</div><div class="lbl">Average Attendance</div></div>
+    </div>
+
+    <h2 style="color:#4f46e5;">Per-Student, Per-Subject Summary</h2>
+    <table id="summaryTable">
+        <thead><tr><th>Name</th><th>Enrollment</th><th>Class</th><th>Subject</th><th>Present</th><th>Absent</th><th>Attendance %</th><th></th></tr></thead>
+        <tbody></tbody>
+    </table>
+
+    <h2 style="color:#4f46e5;margin-top:30px;">Detailed Log</h2>
+    <table id="logTable">
+        <thead><tr><th>Date</th><th>Name</th><th>Enrollment</th><th>Class</th><th>Subject</th><th>Status</th><th>Method</th><th>Time</th></tr></thead>
+        <tbody></tbody>
+    </table>
+</div>
+
+<script src="db.js"></script>
+<script>
+
+function populateFilters(){
+    const classSel = document.getElementById("classFilter");
+    const classes = DB.getClasses();
+    classSel.innerHTML = `<option value="">All Classes</option>` + classes.map(c => `<option value="${c}">${c}</option>`).join("");
+
+    const subjSel = document.getElementById("subjectFilter");
+    const subjects = DB.getAllSubjects();
+    subjSel.innerHTML = `<option value="">All Subjects</option>` + subjects.map(s => `<option value="${s}">${s}</option>`).join("");
+}
+
+function inRange(date, from, to){
+    if(from && date < from) return false;
+    if(to && date > to) return false;
+    return true;
+}
+
+function renderReport(){
+    const subjectFilter = document.getElementById("subjectFilter").value;
+    const cls = document.getElementById("classFilter").value;
+    const from = document.getElementById("fromDate").value;
+    const to = document.getElementById("toDate").value;
+
+    const students = DB.getStudents().filter(s => !cls || s.className === cls);
+    let allRecords = DB.getAttendance().filter(r => inRange(r.date, from, to));
+    if(subjectFilter) allRecords = allRecords.filter(r => r.subject === subjectFilter);
+
+    let totalPresent = 0, totalAbsent = 0;
+    const summaryBody = document.querySelector("#summaryTable tbody");
+    summaryBody.innerHTML = "";
+
+    students.forEach(s => {
+        const studentRecords = allRecords.filter(r => r.enrollment === s.enrollment);
+        const subjectsForStudent = subjectFilter
+            ? [subjectFilter]
+            : Array.from(new Set(studentRecords.map(r => r.subject)));
+
+        if(subjectsForStudent.length === 0) return;
+
+        subjectsForStudent.forEach(sub => {
+            const records = studentRecords.filter(r => r.subject === sub);
+            const present = records.filter(r => r.status === "present").length;
+            const absent = records.filter(r => r.status === "absent").length;
+            const total = present + absent;
+            if(total === 0) return;
+            const pct = Math.round((present/total)*100);
+            totalPresent += present;
+            totalAbsent += absent;
+
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td>${s.name}</td><td>${s.enrollment}</td><td>${s.className}</td><td>${sub}</td>
+                <td>${present}</td><td>${absent}</td><td>${pct}%</td>
+                <td><div class="bar-bg"><div class="bar-fill" style="width:${pct}%; background:${pct < 75 ? '#dc2626' : '#16a34a'};"></div></div></td>`;
+            summaryBody.appendChild(tr);
+        });
+    });
+
+    document.getElementById("c_students").textContent = students.length;
+    document.getElementById("c_present").textContent = totalPresent;
+    document.getElementById("c_absent").textContent = totalAbsent;
+    const totalMarks = totalPresent + totalAbsent;
+    document.getElementById("c_avg").textContent = totalMarks ? Math.round((totalPresent/totalMarks)*100) + "%" : "0%";
+
+    const logBody = document.querySelector("#logTable tbody");
+    logBody.innerHTML = "";
+    allRecords
+      .map(r => ({ ...r, student: students.find(s => s.enrollment === r.enrollment) }))
+      .filter(r => r.student)
+      .sort((a,b) => b.date.localeCompare(a.date))
+      .forEach(r => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td>${r.date}</td><td>${r.student.name}</td><td>${r.enrollment}</td><td>${r.student.className}</td><td>${r.subject}</td><td>${r.status.toUpperCase()}</td><td>${r.method}</td><td>${r.time}</td>`;
+        logBody.appendChild(tr);
+      });
+}
+
+function exportSummary(){
+    const rows = [["Name","Enrollment","Class","Subject","Present","Absent","Attendance %"]];
+    document.querySelectorAll("#summaryTable tbody tr").forEach(tr => {
+        const cells = Array.from(tr.children).slice(0,7).map(td => td.textContent);
+        rows.push(cells);
+    });
+    DB.csvExport(rows, "attendance_summary.csv");
+}
+
+populateFilters();
+renderReport();
+</script>
+</body>
+</html>

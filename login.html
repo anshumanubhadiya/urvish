@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Attendance Management System</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+*{ margin:0; padding:0; box-sizing:border-box; font-family:'Poppins',sans-serif; }
+
+body{
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    background:linear-gradient(135deg,#4f46e5,#06b6d4);
+    padding:30px 10px;
+}
+
+.container{
+    width:1000px;
+    max-width:100%;
+    background:rgba(255,255,255,0.1);
+    backdrop-filter:blur(15px);
+    border-radius:20px;
+    padding:40px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.2);
+}
+
+.title{ text-align:center; color:white; margin-bottom:25px; }
+.title h1{ font-size:34px; }
+.title p{ font-size:15px; opacity:0.9; }
+
+.tabs{ display:flex; justify-content:center; gap:10px; margin-bottom:25px; flex-wrap:wrap; }
+.tab-btn{
+    padding:10px 22px; border:none; border-radius:30px;
+    background:rgba(255,255,255,0.25); color:white; font-weight:600; cursor:pointer; transition:0.25s;
+}
+.tab-btn.active{ background:white; color:#4f46e5; }
+
+.panel{ display:none; gap:30px; justify-content:center; flex-wrap:wrap; }
+.panel.active{ display:flex; }
+
+.card{
+    width:350px; background:white; border-radius:20px; padding:30px;
+    box-shadow:0 8px 20px rgba(0,0,0,0.1); transition:0.3s;
+}
+.card:hover{ transform:translateY(-8px); }
+.card h2{ text-align:center; margin-bottom:20px; color:#4f46e5; }
+.icon{ text-align:center; font-size:40px; margin-bottom:10px; }
+
+.input-group{ margin-bottom:15px; }
+.input-group label{ display:block; margin-bottom:6px; font-size:14px; font-weight:500; }
+.input-group input{ width:100%; padding:12px; border:1px solid #ccc; border-radius:10px; outline:none; }
+.input-group input:focus{ border-color:#4f46e5; }
+.input-group small{ display:block; margin-top:4px; color:#888; font-size:11.5px; }
+
+.btn{
+    width:100%; padding:12px; border:none; border-radius:10px;
+    background:#4f46e5; color:white; font-weight:600; font-size:15px;
+    cursor:pointer; transition:0.25s;
+}
+.btn:hover{ background:#3d38c9; }
+
+.error{ color:#e11d48; font-size:13px; margin-top:8px; min-height:16px; }
+.success{ color:#16a34a; font-size:13px; margin-top:8px; min-height:16px; }
+
+.switch-link{ text-align:center; margin-top:14px; font-size:13px; color:#555; }
+.switch-link a{ color:#4f46e5; font-weight:600; cursor:pointer; text-decoration:underline; }
+
+.note{ text-align:center; color:white; opacity:0.85; font-size:12.5px; margin-top:22px; }
+</style>
+</head>
+<body>
+
+<div class="container">
+    <div class="title">
+        <h1>🎓 Attendance Management System</h1>
+        <p>Face &amp; Biometric enabled, multi-faculty, subject-wise attendance</p>
+    </div>
+
+    <div class="tabs">
+        <button class="tab-btn active" data-panel="loginPanel">Login</button>
+        <button class="tab-btn" data-panel="facultySignupPanel">Faculty Sign Up</button>
+    </div>
+
+    <!-- LOGIN PANEL -->
+    <div class="panel active" id="loginPanel">
+
+        <div class="card">
+            <div class="icon">👨‍🏫</div>
+            <h2>Faculty Login</h2>
+            <form id="adminForm">
+                <div class="input-group">
+                    <label>Faculty ID</label>
+                    <input type="text" id="admin_user" required>
+                </div>
+                <div class="input-group">
+                    <label>Password</label>
+                    <input type="password" id="admin_pass" required>
+                </div>
+                <button class="btn" type="submit">Login as Faculty</button>
+                <p id="adminMsg" class="error"></p>
+            </form>
+            <p class="switch-link">New faculty member? <a data-panel="facultySignupPanel">Create your account</a></p>
+        </div>
+
+        <div class="card">
+            <div class="icon">🎓</div>
+            <h2>Student Login</h2>
+            <form id="studentForm">
+                <div class="input-group">
+                    <label>Enrollment Number</label>
+                    <input type="text" id="studentUser" required>
+                </div>
+                <div class="input-group">
+                    <label>Password</label>
+                    <input type="password" id="studentPass" required>
+                </div>
+                <button class="btn" type="submit">Login as Student</button>
+                <p id="studentMsg" class="error"></p>
+            </form>
+        </div>
+
+    </div>
+
+    <!-- FACULTY SIGNUP PANEL -->
+    <div class="panel" id="facultySignupPanel">
+        <div class="card" style="width:420px;">
+            <div class="icon">📝</div>
+            <h2>Faculty Sign Up</h2>
+            <form id="facultySignupForm">
+                <div class="input-group">
+                    <label>Full Name</label>
+                    <input type="text" id="fs_name" required>
+                </div>
+                <div class="input-group">
+                    <label>Faculty ID (used to login)</label>
+                    <input type="text" id="fs_id" required>
+                </div>
+                <div class="input-group">
+                    <label>Password</label>
+                    <input type="password" id="fs_pass" required>
+                </div>
+                <div class="input-group">
+                    <label>Subject(s) You Teach</label>
+                    <input type="text" id="fs_subjects" placeholder="e.g. Physics, Chemistry" required>
+                    <small>Separate multiple subjects with a comma. You can add/remove more later from your dashboard.</small>
+                </div>
+                <button class="btn" type="submit">Create Faculty Account</button>
+                <p id="facultySignupMsg" class="error"></p>
+            </form>
+            <p class="switch-link">Already registered? <a data-panel="loginPanel">Login here</a></p>
+        </div>
+    </div>
+
+    <p class="note">Note: Students don't self-register — your faculty adds your account from the Faculty Dashboard.</p>
+</div>
+
+<script src="db.js"></script>
+<script>
+
+// Tab switching
+document.querySelectorAll("[data-panel]").forEach(el => {
+    el.addEventListener("click", () => {
+        const target = el.getAttribute("data-panel");
+        document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+        document.getElementById(target).classList.add("active");
+        document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+        const tabBtn = document.querySelector(`.tab-btn[data-panel="${target}"]`);
+        if (tabBtn) tabBtn.classList.add("active");
+    });
+});
+
+// Faculty Login
+document.getElementById("adminForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    const username = document.getElementById("admin_user").value.trim();
+    const password = document.getElementById("admin_pass").value;
+    const validAdmin = DB.findFaculty(username, password);
+    if(validAdmin){
+        DB.setSession("faculty", validAdmin.id);
+        window.location.href = "faculty.html";
+    } else {
+        document.getElementById("adminMsg").textContent = "Faculty ID or Password is wrong!";
+    }
+});
+
+// Student Login
+document.getElementById("studentForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    const username = document.getElementById("studentUser").value.trim();
+    const password = document.getElementById("studentPass").value;
+    const validStudent = DB.findStudentLogin(username, password);
+    if(validStudent){
+        DB.setSession("student", validStudent.enrollment);
+        window.location.href = "student.html";
+    } else {
+        document.getElementById("studentMsg").textContent = "Enrollment No. or Password is wrong!";
+    }
+});
+
+// Faculty Sign Up
+document.getElementById("facultySignupForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    const name = document.getElementById("fs_name").value.trim();
+    const id = document.getElementById("fs_id").value.trim();
+    const password = document.getElementById("fs_pass").value;
+    const subjects = document.getElementById("fs_subjects").value
+        .split(",").map(s => s.trim()).filter(Boolean);
+    const msg = document.getElementById("facultySignupMsg");
+
+    if(DB.facultyIdExists(id)){
+        msg.textContent = "This Faculty ID is already taken. Choose another.";
+        msg.className = "error";
+        return;
+    }
+    if(subjects.length === 0){
+        msg.textContent = "Please enter at least one subject.";
+        msg.className = "error";
+        return;
+    }
+
+    DB.addFaculty({ id, name, password, subjects });
+
+    msg.textContent = "Account created! You can now log in.";
+    msg.className = "success";
+    document.getElementById("facultySignupForm").reset();
+    setTimeout(() => {
+        document.querySelector('.tab-btn[data-panel="loginPanel"]').click();
+    }, 1200);
+});
+
+</script>
+</body>
+</html>
